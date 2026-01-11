@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="company-container">
+    <div class="company-header">
+        <h1>Role Configuration</h1>
+        <p>Define permissions for users within {{ company.name }}</p>
+    </div>
+
+    <div class="tab-content config-content">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            
+            <div class="role-name-section">
+                <label>Role Name</label>
+                {{ form.name(class="form-input", placeholder="e.g. Project Manager") }}
+            </div>
+
+            <hr class="divider">
+
+            <div class="permissions-grid">
+                <div class="perm-item">
+                    <div class="perm-info">
+                        <strong>Administrator Perm</strong>
+                        <span>Full access to company settings and roles.</span>
+                    </div>
+                    <label class="switch">
+                        {{ form.perm_admin() }}
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="perm-item">
+                    <div class="perm-info">
+                        <strong>View Permission</strong>
+                        <span>Able to view and list company files.</span>
+                    </div>
+                    <label class="switch">
+                        {{ form.perm_view() }}
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="perm-item">
+                    <div class="perm-info">
+                        <strong>Modification Perm</strong>
+                        <span>Able to change or update file metadata.</span>
+                    </div>
+                    <label class="switch">
+                        {{ form.perm_modify() }}
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="perm-item">
+                    <div class="perm-info">
+                        <strong>Upload Perm</strong>
+                        <span>Able to add new files to this company.</span>
+                    </div>
+                    <label class="switch">
+                        {{ form.perm_upload() }}
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="perm-item">
+                    <div class="perm-info">
+                        <strong>Download Perm</strong>
+                        <span>Able to decrypt and download company files.</span>
+                    </div>
+                    <label class="switch">
+                        {{ form.perm_download() }}
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="perm-item">
+                    <div class="perm-info">
+                        <strong>View Activity Perm</strong>
+                        <span>Access to the company's activity logs.</span>
+                    </div>
+                    <label class="switch">
+                        {{ form.perm_logs() }}
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="config-actions">
+                <button type="button" class="btn-danger">Delete Role</button>
+                {{ form.submit(class="btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

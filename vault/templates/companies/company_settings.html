@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="company-container">
+    <div class="company-header">
+        <h1>{{ company.name if company else 'New Company' }} / Settings</h1>
+    </div>
+
+    <div class="company-nav">
+        {% if company.id %}
+            <a href="{{ url_for('companies.company_files', company_id=company.id) }}">Files</a>
+            <a href="{{ url_for('companies.company_users', company_id=company.id) }}">Users</a>    
+            <a href="{{ url_for('companies.company_roles', company_id=company.id) }}">Roles</a>
+            <a href="{{ url_for('companies.company_logs', company_id=company.id) }}">Activity Logs</a>
+            <a href="{{ url_for('companies.company_settings', company_id=company.id) }}" class="active">Settings</a>
+        {% else %}
+            <span style="color: #6b7280;">Complete setup to enable tabs</span>
+        {% endif %}
+    </div>
+
+    <div class="tab-content">
+        <div class="settings-card">
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                <div class="form-group">
+                    <label>Company Name</label>
+                    {{ form.name(class="form-input", placeholder="Enter company name") }}
+                </div>
+                <div class="form-group">
+                    <label>Company Password</label>
+                    {{ form.password(class="form-input", placeholder="Update company password") }}
+                </div>
+                <div class="form-group">
+                    <label>Update Logo</label>
+                    {{ form.logo(class="form-file") }}
+                </div>
+                
+                <div class="settings-footer">
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                    <button type="button" class="btn-danger">Delete Company</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

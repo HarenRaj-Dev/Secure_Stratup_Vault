@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="company-container">
+    <div class="company-header">
+        <h1>{{ company.name }} / Roles</h1>
+    </div>
+
+    <div class="company-navbar">
+        <a href="{{ url_for('companies.company_files', company_id=company.id) }}">Files</a>
+        <a href="{{ url_for('companies.company_users', company_id=company.id) }}">Users</a>
+        <a href="{{ url_for('companies.company_roles', company_id=company.id) }}" class="active">Roles</a>
+        <a href="{{ url_for('companies.company_logs', company_id=company.id) }}">Activity Logs</a>
+        <a href="{{ url_for('companies.company_settings', company_id=company.id) }}">Settings</a>
+    </div>
+
+    <div class="tab-content">
+        <div class="content-actions">
+            <a href="{{ url_for('companies.role_config', company_id=company.id) }}" class="btn-primary">
+                + Add Role
+            </a>
+        </div>
+
+        <div class="roles-grid">
+            {% for role in roles %}
+            <div class="role-card">
+                <h3>{{ role.name }}</h3>
+                <p>Permissions: 
+                    {% if role.perm_admin %}Admin, {% endif %}
+                    {% if role.perm_view %}View, {% endif %}
+                    {% if role.perm_download %}Download{% endif %}
+                </p>
+                <div class="role-footer">
+                    <button class="btn-sm">Edit Role</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

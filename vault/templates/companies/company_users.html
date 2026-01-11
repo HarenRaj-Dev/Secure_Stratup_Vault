@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="company-container">
+    <div class="company-header">
+        <h1>{{ company.name }} / Users</h1>
+    </div>
+
+    <div class="company-navbar">
+        <a href="{{ url_for('companies.company_files', company_id=company.id) }}">Files</a>
+        <a href="{{ url_for('companies.company_users', company_id=company.id) }}" class="active">Users</a>
+        <a href="{{ url_for('companies.company_roles', company_id=company.id) }}">Roles</a>
+        <a href="{{ url_for('companies.company_logs', company_id=company.id) }}">Activity Logs</a>
+        <a href="{{ url_for('companies.company_settings', company_id=company.id) }}">Settings</a>
+    </div>
+
+    <div class="tab-content">
+        <div class="content-actions">
+            <button class="btn-primary">Add New User</button>
+        </div>
+
+        <table class="vault-table">
+            <thead>
+                <tr>
+                    <th>USER EMAIL</th>
+                    <th>ROLE</th>
+                    <th>STATUS</th>
+                    <th>ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ current_user.email }}</td>
+                    <td><span class="badge admin">Owner</span></td>
+                    <td>Active</td>
+                    <td><button class="btn-sm">Edit</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

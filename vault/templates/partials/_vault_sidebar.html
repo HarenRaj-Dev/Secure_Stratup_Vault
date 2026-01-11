@@ -1,0 +1,19 @@
+<div class="sidebar">
+    <div class="sidebar-section">
+        <h3 style="color: white; font-size: 14px; margin-bottom: 15px;">SSV Vault</h3>
+        <a href="{{ url_for('main.dashboard') }}" class="sidebar-link">📁 Personal Vault</a>
+    </div>
+
+    <div class="sidebar-section">
+        <h3 style="color: white; font-size: 14px; margin-bottom: 15px;">COMPANIES</h3>
+        <a href="{{ url_for('companies.create_company') }}" class="btn-new-company" style="margin-bottom: 15px; display: block; text-align: center;">+ New Company</a>
+        {% for company in companies %}
+            <a href="{{ url_for('companies.company_files', company_id=company.id) }}" class="sidebar-link">🏢 {{ company.name }}</a>
+        {% endfor %}
+    </div>
+
+    <div class="sidebar-footer">
+        <span style="color: #6b7280; font-size: 12px; display: block; margin-bottom: 10px;">{{ current_user.email }}</span>
+        <a href="{{ url_for('auth.logout') }}" class="sidebar-link" style="color: #ef4444;">🚪 Logout</a>
+    </div>
+</div>

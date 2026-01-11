@@ -1,0 +1,54 @@
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.vault-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.vault-table th {
+    text-align: left;
+    padding: 1rem;
+    background: #111827;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.vault-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.btn-download {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: bold;
+}
+
+
+
+.dashboard-content {
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto; /* This centers the whole dashboard area */
+}
+
+.content-header {
+    margin-bottom: 30px;
+    border-bottom: 1px solid #1e293b;
+    padding-bottom: 20px;
+}

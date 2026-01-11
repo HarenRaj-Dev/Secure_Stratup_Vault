@@ -1,0 +1,102 @@
+/* Apply box-sizing globally to this page so padding doesn't break width */
+.auth-page-wrapper, .auth-page-wrapper *, .auth-page-wrapper *::before, .auth-page-wrapper *::after {
+    box-sizing: border-box;
+}
+
+.auth-page-wrapper {
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, #1e293b 0%, #0b0e14 100%);
+}
+
+.auth-card {
+    background: #1f2937; /* Replaced var for compatibility */
+    padding: 2.5rem;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid #374151;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.auth-logo { width: 60px; margin-bottom: 1rem; }
+
+.input-group { 
+    margin-bottom: 1.2rem; 
+    position: relative; 
+    width: 100%; /* Ensures group fills card */
+}
+
+.form-input {
+    box-sizing: border-box; /* This keeps padding inside the width */
+    margin: 0;
+}
+
+/* Updated selector to include your .form-input class */
+.input-group input, .form-input {
+    width: 100% !important;
+    padding: 12px;
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    color: white;
+    display: block;
+}
+
+.btn-auth {
+    width: 100%;
+    padding: 12px;
+    background: #0ea5e9;
+    color: white;
+    border-radius: 8px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    margin-top: 10px;
+    box-sizing: border-box;
+}
+
+.password-toggle {
+    position: absolute; 
+    right: 12px; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    color: #0ea5e9; 
+    cursor: pointer; 
+    font-size: 11px; 
+    font-weight: bold;
+    z-index: 10;
+}
+
+.google-btn {
+    width: 100%;
+    background: white;
+    color: #1f2937;
+    padding: 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-decoration: none;
+    margin-top: 15px;
+}
+
+input.form-input, .btn-auth {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important; /* Forces padding inside the box */
+    display: block !important;
+}
+
+.input-group {
+    width: 100% !important;
+    padding: 0 !important;
+}

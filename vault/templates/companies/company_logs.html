@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="company-container">
+    <div class="company-header">
+        <h1>{{ company.name }} / Activity Logs</h1>
+    </div>
+
+    <div class="company-navbar">
+        <a href="{{ url_for('companies.company_files', company_id=company.id) }}">Files</a>
+        <a href="{{ url_for('companies.company_users', company_id=company.id) }}">Users</a>
+        <a href="{{ url_for('companies.company_roles', company_id=company.id) }}">Roles</a>
+        <a href="{{ url_for('companies.company_logs', company_id=company.id) }}" class="active">Activity Logs</a>
+        <a href="{{ url_for('companies.company_settings', company_id=company.id) }}">Settings</a>
+    </div>
+
+    <div class="tab-content">
+        <div class="log-table-wrapper">
+            <table class="vault-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>User Email</th>
+                        <th>Action</th>
+                        <th>IP Address</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ log.user_email }}</td>
+                        <td><span class="action-tag">{{ log.action }}</span></td>
+                        <td>{{ log.ip_address }}</td>
+                        <td><button class="btn-sm">View</button></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="empty-row">No activities recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

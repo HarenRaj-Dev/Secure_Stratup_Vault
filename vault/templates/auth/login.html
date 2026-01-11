@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+
+<div class="auth-page-wrapper">
+    {% include 'auth/_auth_card.html' %}
+</div>
+
+<script>
+function toggleAuth() {
+    const subtitle = document.getElementById('auth-subtitle');
+    const toggleLink = document.getElementById('toggle-msg');
+    const form = document.getElementById('auth-form');
+    const confirmGroup = document.getElementById('confirm-pass-group');
+    const confirmInput = document.getElementById('confirm_field');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    if (submitBtn.innerText === "Login") {
+        // Switch to Register Mode
+        subtitle.innerText = "Create your secure vault account today.";
+        toggleLink.innerHTML = 'Already have an account? <a href="javascript:void(0)" onclick="toggleAuth()">Login</a>';
+        form.action = "{{ url_for('auth.register') }}";
+        submitBtn.innerText = "Create Account";
+        confirmGroup.style.display = "block";
+        confirmInput.setAttribute('required', 'required');
+    } else {
+        // Switch back to Login Mode
+        location.reload(); 
+    }
+}
+
+</script>
+{% endblock %}
+
+{# ADD THIS HERE - Outside the content block #}
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+{% endblock %}

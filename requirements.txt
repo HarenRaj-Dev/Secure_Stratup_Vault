@@ -1,0 +1,16 @@
+# Web Framework
+Flask==2.2.5
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+Flask-SQLAlchemy==2.5.1
+Flask-Migrate==4.0.5
+
+# Security and Cryptography
+cryptography==41.0.5
+Werkzeug==3.0.1
+
+# Database
+SQLAlchemy==1.4.51
+
+# Validation
+email-validator==2.1.0.post1

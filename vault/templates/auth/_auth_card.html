@@ -1,0 +1,68 @@
+<div class="auth-card">
+    <div class="auth-header">
+        <img src="{{ url_for('static', filename='img/shield-icon.svg') }}" alt="Shield" class="auth-logo">
+        <h2>SECURE STARTUP VAULT</h2>
+        <p id="auth-subtitle">Welcome back! Please login to your account.</p>
+    </div>
+
+    <div id="login-section" style="width: 100%;">
+        <form method="POST" action="{{ url_for('auth.login') }}" id="auth-form">
+            {{ form.csrf_token }}
+            
+            <div class="input-group">
+                <input type="email" name="email" class="form-input" placeholder="Email Address" required>
+            </div>
+            
+            <div class="input-group" style="position: relative;">
+                <input type="password" name="password" id="pass_field" class="form-input" placeholder="Password" required>
+                <span class="password-toggle" onclick="togglePassword('pass_field')">SHOW</span>
+            </div>
+
+            <button type="submit" class="btn-auth" id="submit-btn">Login</button>
+        </form>
+
+        <div class="auth-footer" style="margin-top: 20px;">
+            <p style="color: #9ca3af; font-size: 12px;">Protected by End-to-End Encryption</p>
+        </div>
+    </div>
+
+    <div class="auth-divider">
+        <span>or continue with</span>
+    </div>
+
+    <button class="google-btn">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="18">
+        Sign in with Google
+    </button>
+
+    <div class="auth-footer">
+        <p id="toggle-msg">Don't have an account? <a href="javascript:void(0)" onclick="toggleAuth()">Register</a></p>
+    </div>
+</div>
+
+<script>
+function runToggle() {
+    const title = document.getElementById('auth-title');
+    const subtitle = document.getElementById('auth-subtitle');
+    const area = document.getElementById('confirm-pass-area');
+    const btn = document.getElementById('submit-btn');
+    const msg = document.getElementById('toggle-msg');
+    const form = document.getElementById('auth-form');
+
+    if (btn.innerText === "Login") {
+        // Switch to REGISTER mode
+        if (title) title.innerText = "Create Account";
+        if (subtitle) subtitle.innerText = "Join the most secure vault for your startup.";
+        
+        // FORCE the display using block
+        area.style.setProperty('display', 'block', 'important'); 
+        
+        btn.innerText = "Register";
+        form.action = "{{ url_for('auth.register') }}";
+        msg.innerHTML = 'Already have an account? <a href="javascript:void(0)" onclick="runToggle()" style="color: #0ea5e9;">Login</a>';
+    } else {
+        // Switch back to LOGIN mode
+        window.location.reload();
+    }
+}
+</script>
