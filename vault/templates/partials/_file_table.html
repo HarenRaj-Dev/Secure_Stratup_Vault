@@ -12,10 +12,24 @@
         <tbody>
             {% for file in files %}
             <tr>
-                <td class="file-name"><i>📄</i> {{ file.filename }}</td>
+                <td>{{ file.filename }}</td>
                 <td>{{ current_user.email.split('@')[0] }}</td>
                 <td>{{ file.upload_date.strftime('%Y-%m-%d') }}</td>
-                <td>2.4 MB</td> 
+                <td>
+                    {% if file.size %}
+                        {% if file.size < 1024 %}
+                            {{ file.size }} B
+                        {% elif file.size < 1024*1024 %}
+                            {{ "%.1f"|format(file.size / 1024) }} KB
+                        {% elif file.size < 1024*1024*1024 %}
+                            {{ "%.1f"|format(file.size / (1024*1024)) }} MB
+                        {% else %}
+                            {{ "%.1f"|format(file.size / (1024*1024*1024)) }} GB
+                        {% endif %}
+                    {% else %}
+                        Unknown
+                    {% endif %}
+                </td> 
                 <td>
                     <div style="display: flex; gap: 15px; align-items: center;">
                         {% if company and company.id %}

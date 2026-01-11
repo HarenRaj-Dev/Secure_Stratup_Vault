@@ -16,7 +16,7 @@
 
     <div class="tab-content">
         <div class="content-actions">
-            <button class="btn-primary">Add New User</button>
+            <button class="btn-primary" data-company-id="{{ company.id }}" onclick="addNewUser(this)">Add New User</button>
         </div>
 
         <table class="vault-table">
@@ -29,14 +29,20 @@
                 </tr>
             </thead>
             <tbody>
+                {% for member in members %}
                 <tr>
-                    <td>{{ current_user.email }}</td>
-                    <td><span class="badge admin">Owner</span></td>
+                    <td>{{ member.user.email }}</td>
+                    <td><span class="badge {% if member.is_owner %}admin{% else %}member{% endif %}">{{ 'Owner' if member.is_owner else member.role.name }}</span></td>
                     <td>Active</td>
                     <td><button class="btn-sm">Edit</button></td>
                 </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/companies.js') }}"></script>
 {% endblock %}

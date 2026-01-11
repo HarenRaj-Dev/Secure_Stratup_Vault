@@ -13,3 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function confirmDeleteCompany() {
     return confirm("Are you sure? This will permanently delete all encrypted files associated with this company.");
 }
+
+function addNewUser(button) {
+    const companyId = button.getAttribute('data-company-id');
+    window.location.href = '/companies/' + companyId + '/add_user';
+}

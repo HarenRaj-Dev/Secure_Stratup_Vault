@@ -7,7 +7,7 @@ from vault import db
 # CHANGE: Import the blueprint from the local __init__.py file
 from vault.extensions import main_bp 
 from vault.main.forms import UploadFileForm
-from vault.models import File, Company
+from vault.models import File, Company, memberships
 from vault.crypto_utils import decrypt_file_data
 from vault.crypto_utils import encrypt_file_data, decrypt_file_data
 
@@ -21,8 +21,23 @@ def dashboard():
     # ... rest of your code remains the same ...
     # Fetch user's personal files (where company_id is NULL)
     user_files = File.query.filter_by(user_id=current_user.id, company_id=None).all()
-    # Fetch companies for the sidebar list
-    user_companies = Company.query.filter_by(owner_id=current_user.id).all()
+    
+    # Calculate file sizes
+    for file in user_files:
+        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file.encrypted_name)
+        if os.path.exists(file_path):
+            file.size = os.path.getsize(file_path)
+        else:
+            file.size = 0
+    
+    # Fetch companies for the sidebar list (owned or member)
+    from sqlalchemy import select
+    owned_companies = Company.query.filter_by(owner_id=current_user.id).all()
+    member_companies_query = db.session.execute(
+        select(Company).join(memberships, Company.id == memberships.c.company_id).where(memberships.c.user_id == current_user.id)
+    ).all()
+    member_companies = [row[0] for row in member_companies_query]
+    user_companies = list(set(owned_companies + member_companies))
     form = UploadFileForm()
     return render_template('main/dashboard.html', 
                            files=user_files, 

@@ -18,3 +18,7 @@ class RoleForm(FlaskForm):
     perm_download = BooleanField('Download Files')
     perm_logs = BooleanField('View Activity Logs')
     submit = SubmitField('Save Role')
+
+class AddUserForm(FlaskForm):
+    email = StringField('User Email', validators=[DataRequired()])
+    submit = SubmitField('Add User')
