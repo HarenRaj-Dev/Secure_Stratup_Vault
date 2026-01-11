@@ -19,7 +19,13 @@
 
     <div class="tab-content">
         <div class="content-actions">
-            <button class="btn-primary">+ Add from Vault</button>
+            <form action="{{ url_for('companies.upload_company_file', company_id=company.id) }}" method="POST" enctype="multipart/form-data" class="upload-form">
+                {{ form.hidden_tag() }}
+                <label for="file-upload" class="btn-primary">
+                    + Upload to Company
+                </label>
+                <input id="file-upload" type="file" name="file" onchange="this.form.submit()" style="display:none;">
+            </form>
         </div>
         
         {% include 'partials/_file_table.html' %}

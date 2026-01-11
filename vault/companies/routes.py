@@ -1,10 +1,17 @@
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, current_app, send_file
 from flask_login import login_required, current_user
 from vault import db
 from vault.models import Company, Role, ActivityLog, File
 from vault.companies import companies_bp
 from vault.companies.forms import CompanyForm, RoleForm
+from vault.main.forms import UploadFileForm
+from vault.crypto_utils import encrypt_file_data, decrypt_file_data
 from vault.companies.services import log_activity, has_permission
+from werkzeug.utils import secure_filename
+from flask_wtf.csrf import generate_csrf
+import os
+import uuid
+import io
 
 @companies_bp.route('/new', methods=['GET', 'POST'])
 @login_required
@@ -27,9 +34,9 @@ def create_company():
         flash(f'Company {new_company.name} created successfully!', 'success')
         return redirect(url_for('main.dashboard'))
     # Pass a dictionary representing a new company to avoid the 'Undefined' error
-    return render_template('companies/company_settings.html',form=form, title="New Company", company={'name': 'New Company'})
+    return render_template('companies/company_settings.html',form=form, company={'name': 'New Company'}, csrf_token=generate_csrf())
 
-@companies_bp.route('/<int:company_id>/settings')
+@companies_bp.route('/<int:company_id>/settings', methods=['GET', 'POST'])
 @login_required
 def company_settings(company_id):
     company = Company.query.get_or_404(company_id)
@@ -37,7 +44,41 @@ def company_settings(company_id):
     if company.owner_id != current_user.id:
         flash("Only the owner can access settings.", "danger")
         return redirect(url_for('companies.company_files', company_id=company_id))
-    return render_template('companies/company_settings.html', company=company)
+    
+    form = CompanyForm()
+    form.name.data = company.name
+    form.password.data = company.password
+    if form.validate_on_submit():
+        company.name = form.name.data
+        company.password = form.password.data
+        if form.logo.data:
+            logo_file = form.logo.data
+            logo_filename = secure_filename(logo_file.filename)
+            logo_path = os.path.join(current_app.root_path, 'static', 'img', logo_filename)
+            logo_file.save(logo_path)
+            company.logo = logo_filename
+        db.session.commit()
+        flash("Company settings updated!", "success")
+        return redirect(url_for('companies.company_settings', company_id=company_id))
+    
+    return render_template('companies/company_settings.html', company=company, form=form, csrf_token=generate_csrf())
+
+@companies_bp.route('/<int:company_id>/delete', methods=['POST'])
+@login_required
+def delete_company(company_id):
+    company = Company.query.get_or_404(company_id)
+    if company.owner_id != current_user.id:
+        flash("Only the owner can delete the company.", "danger")
+        return redirect(url_for('companies.company_settings', company_id=company_id))
+    
+    # Delete associated files, roles, logs, etc.
+    File.query.filter_by(company_id=company_id).delete()
+    Role.query.filter_by(company_id=company_id).delete()
+    ActivityLog.query.filter_by(company_id=company_id).delete()
+    db.session.delete(company)
+    db.session.commit()
+    flash("Company deleted successfully.", "success")
+    return redirect(url_for('main.dashboard'))
 
 @companies_bp.route('/<int:company_id>/files')
 @login_required
@@ -49,7 +90,100 @@ def company_files(company_id):
     
     files = File.query.filter_by(company_id=company_id).all()
     log_activity(company_id, current_user.email, "Viewed company files")
-    return render_template('companies/company_files.html', company=company, files=files)
+    form = UploadFileForm()
+    return render_template('companies/company_files.html', company=company, files=files, form=form)
+
+@companies_bp.route('/<int:company_id>/upload', methods=['POST'])
+@login_required
+def upload_company_file(company_id):
+    company = Company.query.get_or_404(company_id)
+    if not has_permission(current_user, company_id, 'perm_upload'):
+        flash("Access Denied", "danger")
+        return redirect(url_for('companies.company_files', company_id=company_id))
+    
+    form = UploadFileForm()
+    if form.validate_on_submit():
+        file_storage = form.file.data
+        original_filename = file_storage.filename
+        
+        # Encrypt
+        file_content = file_storage.read()
+        encrypted_data, encrypted_aes_key, iv = encrypt_file_data(file_content, current_user.rsa_public_key)
+        
+        # Save
+        unique_name = str(uuid.uuid4())
+        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_name)
+        
+        with open(file_path, 'wb') as f:
+            f.write(encrypted_data)
+        
+        # DB
+        new_file = File(
+            filename=original_filename,
+            encrypted_name=unique_name,
+            user_id=current_user.id,
+            company_id=company_id,
+            encrypted_aes_key=encrypted_aes_key,
+            iv=iv
+        )
+        db.session.add(new_file)
+        db.session.commit()
+        
+        log_activity(company_id, current_user.email, f"Uploaded file: {original_filename}")
+        flash(f'File {original_filename} uploaded to company!', 'success')
+    return redirect(url_for('companies.company_files', company_id=company_id))
+
+@companies_bp.route('/<int:company_id>/download/<int:file_id>')
+@login_required
+def download_company_file(company_id, file_id):
+    company = Company.query.get_or_404(company_id)
+    if not has_permission(current_user, company_id, 'perm_download'):
+        flash("Access Denied", "danger")
+        return redirect(url_for('companies.company_files', company_id=company_id))
+    
+    file_record = File.query.get_or_404(file_id)
+    if file_record.company_id != company_id:
+        flash("File not found in this company.", "danger")
+        return redirect(url_for('companies.company_files', company_id=company_id))
+    
+    # Read encrypted file
+    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file_record.encrypted_name)
+    with open(file_path, 'rb') as f:
+        encrypted_data = f.read()
+    
+    # Decrypt
+    decrypted_data = decrypt_file_data(
+        encrypted_data, 
+        file_record.encrypted_aes_key, 
+        file_record.iv, 
+        current_user.rsa_private_key
+    )
+    
+    log_activity(company_id, current_user.email, f"Downloaded file: {file_record.filename}")
+    return send_file(
+        io.BytesIO(decrypted_data),
+        download_name=file_record.filename,
+        as_attachment=True
+    )
+
+@companies_bp.route('/<int:company_id>/delete/<int:file_id>', methods=['POST'])
+@login_required
+def delete_company_file(company_id, file_id):
+    company = Company.query.get_or_404(company_id)
+    if not has_permission(current_user, company_id, 'perm_modify'):
+        flash("Access Denied", "danger")
+        return redirect(url_for('companies.company_files', company_id=company_id))
+    
+    file_to_delete = File.query.get_or_404(file_id)
+    if file_to_delete.company_id != company_id:
+        flash("File not found in this company.", "danger")
+        return redirect(url_for('companies.company_files', company_id=company_id))
+    
+    db.session.delete(file_to_delete)
+    db.session.commit()
+    log_activity(company_id, current_user.email, f"Deleted file: {file_to_delete.filename}")
+    flash("File removed from company vault.", "success")
+    return redirect(url_for('companies.company_files', company_id=company_id))
 
 @companies_bp.route('/<int:company_id>/roles', methods=['GET', 'POST'])
 @login_required

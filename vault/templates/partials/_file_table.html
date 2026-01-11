@@ -18,16 +18,29 @@
                 <td>2.4 MB</td> 
                 <td>
                     <div style="display: flex; gap: 15px; align-items: center;">
-                        <a href="{{ url_for('main.download_file', file_id=file.id) }}" class="action-link download" style="color: #0ea5e9; text-decoration: none;">Download</a>
+                        {% if company and company.id %}
+                        <a href="{{ url_for('companies.download_company_file', company_id=company.id, file_id=file.id) }}" class="action-link download" style="color: #0ea5e9; text-decoration: none;">Download</a>
                         
-                        <form action="{{ url_for('main.delete_file', file_id=file.id) }}" method="POST" style="margin:0; display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <form action="{{ url_for('companies.delete_company_file', company_id=company.id, file_id=file.id) }}" method="POST" style="margin:0; display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ form.csrf_token }}">
                             <button type="submit" class="action-link delete" 
                                     style="background:none; border:none; color:#ef4444; cursor:pointer; padding:0; font-family:inherit; font-size:inherit; font-weight: 500;" 
                                     onclick="return confirm('Are you sure you want to permanently delete this encrypted file?')">
                                 Delete
                             </button>
                         </form>
+                        {% else %}
+                        <a href="{{ url_for('main.download_file', file_id=file.id) }}" class="action-link download" style="color: #0ea5e9; text-decoration: none;">Download</a>
+                        
+                        <form action="{{ url_for('main.delete_file', file_id=file.id) }}" method="POST" style="margin:0; display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ form.csrf_token }}">
+                            <button type="submit" class="action-link delete" 
+                                    style="background:none; border:none; color:#ef4444; cursor:pointer; padding:0; font-family:inherit; font-size:inherit; font-weight: 500;" 
+                                    onclick="return confirm('Are you sure you want to permanently delete this encrypted file?')">
+                                Delete
+                            </button>
+                        </form>
+                        {% endif %}
                     </div>
                 </td>
             </tr>

@@ -8,6 +8,7 @@ from vault import db
 from vault.extensions import main_bp 
 from vault.main.forms import UploadFileForm
 from vault.models import File, Company
+from vault.crypto_utils import decrypt_file_data
 from vault.crypto_utils import encrypt_file_data, decrypt_file_data
 
 # REMOVE the line: main_bp = Blueprint("main", __name__) 
@@ -103,3 +104,33 @@ def delete_file(file_id):
     db.session.commit()
     flash("File removed from vault.", "success")
     return redirect(url_for('main.dashboard'))
+
+@main_bp.route("/view/<int:file_id>")
+@login_required
+def view_file(file_id):
+    file_record = File.query.get_or_404(file_id)
+    
+    # Check ownership
+    if file_record.user_id != current_user.id:
+        flash("Unauthorized access!", "danger")
+        return redirect(url_for('main.dashboard'))
+    
+    # 1. Read encrypted file from disk
+    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file_record.encrypted_name)
+    with open(file_path, 'rb') as f:
+        encrypted_data = f.read()
+    
+    # 2. Decrypt using User's Private Key
+    decrypted_data = decrypt_file_data(
+        encrypted_data, 
+        file_record.encrypted_aes_key, 
+        file_record.iv, 
+        current_user.rsa_private_key
+    )
+    
+    # 3. Send back to user for viewing
+    return send_file(
+        io.BytesIO(decrypted_data),
+        mimetype='application/pdf',  # Or detect type based on extension
+        as_attachment=False
+    )

@@ -2,15 +2,13 @@ import os
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.asymmetric import rsa, padding as asym_padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
 def generate_user_keys():
     """Generates RSA pair for a new user."""
     private_key = rsa.generate_private_key(
         public_exponent=65537,
-        key_size=2048,
-        backend=default_backend()
+        key_size=2048
     )
     public_key = private_key.public_key()
     
@@ -36,12 +34,12 @@ def encrypt_file_data(file_binary, public_key_pem):
     padder = padding.PKCS7(128).padder()
     padded_data = padder.update(file_binary) + padder.finalize()
     
-    cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend())
+    cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv))
     encryptor = cipher.encryptor()
     encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
     
     # 3. Encrypt AES Key with User's RSA Public Key
-    public_key = serialization.load_pem_public_key(public_key_pem, backend=default_backend())
+    public_key = serialization.load_pem_public_key(public_key_pem)
     encrypted_aes_key = public_key.encrypt(
         aes_key,
         asym_padding.OAEP(
@@ -55,7 +53,7 @@ def encrypt_file_data(file_binary, public_key_pem):
 def decrypt_file_data(encrypted_data, encrypted_aes_key, iv, private_key_pem):
     """RSA Key Unwrap + AES-256 Decryption."""
     # 1. Decrypt the AES key using RSA Private Key
-    private_key = serialization.load_pem_private_key(private_key_pem, password=None, backend=default_backend())
+    private_key = serialization.load_pem_private_key(private_key_pem, password=None)
     aes_key = private_key.decrypt(
         encrypted_aes_key,
         asym_padding.OAEP(
@@ -66,7 +64,7 @@ def decrypt_file_data(encrypted_data, encrypted_aes_key, iv, private_key_pem):
     )
     
     # 2. Decrypt the File
-    cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend())
+    cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv))
     decryptor = cipher.decryptor()
     padded_data = decryptor.update(encrypted_data) + decryptor.finalize()
     
