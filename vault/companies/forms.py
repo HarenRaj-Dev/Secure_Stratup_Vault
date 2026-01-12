@@ -17,6 +17,9 @@ class RoleForm(FlaskForm):
     perm_upload = BooleanField('Upload Files')
     perm_download = BooleanField('Download Files')
     perm_logs = BooleanField('View Activity Logs')
+    perm_remove_user = BooleanField('Remove Users')
+    perm_manage_roles = BooleanField('Manage Roles')
+    perm_add_users = BooleanField('Add Users')
     submit = SubmitField('Save Role')
 
 class AddUserForm(FlaskForm):

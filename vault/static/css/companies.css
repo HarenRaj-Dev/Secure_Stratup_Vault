@@ -12,9 +12,15 @@
     transition: 0.3s;
 }
 
-.company-navbar a.active {
-    color: var(--accent);
-    border-bottom: 2px solid var(--accent);
+.company-info {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.remove-user-form {
+    display: inline;
+    margin-left: 10px;
 }
 
 .roles-grid {

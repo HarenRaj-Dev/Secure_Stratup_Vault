@@ -4,7 +4,7 @@
 <div class="company-container">
     <div class="company-header">
         <div class="company-info">
-            <img src="{{ url_for('static', filename='img/' + company.logo) }}" class="company-lg-logo">
+            <img src="{{ url_for('static', filename='img/' + company.logo) }}?t={{ company.logo }}" class="company-lg-logo" width="50" height="50">
             <h1>{{ company.name }}</h1>
         </div>
     </div>
@@ -12,8 +12,12 @@
     <div class="company-navbar">
         <a href="{{ url_for('companies.company_files', company_id=company.id) }}" class="active">Files</a>
         <a href="{{ url_for('companies.company_users', company_id=company.id) }}">Users</a>
+        {% if can_manage_roles %}
         <a href="{{ url_for('companies.company_roles', company_id=company.id) }}">Roles</a>
+        {% endif %}
+        {% if can_view_logs %}
         <a href="{{ url_for('companies.company_logs', company_id=company.id) }}">Activity Logs</a>
+        {% endif %}
         <a href="{{ url_for('companies.company_settings', company_id=company.id) }}">Settings</a>
     </div>
 

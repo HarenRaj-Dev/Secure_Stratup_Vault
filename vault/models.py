@@ -28,7 +28,7 @@ class Company(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     password = db.Column(db.String(100)) # Company entry password
-    logo = db.Column(db.String(100), default='default_logo.png')
+    logo = db.Column(db.String(100), default='logo.svg')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     
@@ -47,6 +47,9 @@ class Role(db.Model):
     perm_upload = db.Column(db.Boolean, default=False)
     perm_download = db.Column(db.Boolean, default=False)
     perm_logs = db.Column(db.Boolean, default=False)
+    perm_remove_user = db.Column(db.Boolean, default=False)
+    perm_manage_roles = db.Column(db.Boolean, default=False)
+    perm_add_users = db.Column(db.Boolean, default=False)
 
 class File(db.Model):
     id = db.Column(db.Integer, primary_key=True)

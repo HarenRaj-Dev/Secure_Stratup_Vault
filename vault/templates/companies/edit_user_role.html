@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="company-container">
+    <div class="company-header">
+        <h1>{{ company.name }} / Edit Role for {{ user.email }}</h1>
+    </div>
+
+    <div class="company-navbar">
+        <a href="{{ url_for('companies.company_files', company_id=company.id) }}">Files</a>
+        <a href="{{ url_for('companies.company_users', company_id=company.id) }}" class="active">Users</a>
+        <a href="{{ url_for('companies.company_roles', company_id=company.id) }}">Roles</a>
+        <a href="{{ url_for('companies.company_logs', company_id=company.id) }}">Activity Logs</a>
+        <a href="{{ url_for('companies.company_settings', company_id=company.id) }}">Settings</a>
+    </div>
+
+    <div class="tab-content">
+        <div class="settings-card">
+            <form method="POST">
+                <div class="form-group">
+                    <label>Select Role</label>
+                    <select name="role_id" class="form-input">
+                        <option value="none" {% if not current_role %}selected{% endif %}>No Role</option>
+                        {% for role in roles %}
+                        <option value="{{ role.id }}" {% if current_role and current_role.id == role.id %}selected{% endif %}>{{ role.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn-primary">Update Role</button>
+                <a href="{{ url_for('companies.company_users', company_id=company.id) }}" class="btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/companies.js') }}"></script>
+{% endblock %}

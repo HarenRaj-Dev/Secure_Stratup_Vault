@@ -3,6 +3,7 @@ import uuid
 import io
 from flask import render_template, url_for, flash, redirect, request, current_app, send_file
 from flask_login import current_user, login_required
+from flask_wtf.csrf import generate_csrf
 from vault import db
 # CHANGE: Import the blueprint from the local __init__.py file
 from vault.extensions import main_bp 
@@ -42,7 +43,9 @@ def dashboard():
     return render_template('main/dashboard.html', 
                            files=user_files, 
                            companies=user_companies, 
-                           form=form)
+                           form=form,
+                           company=None,
+                           csrf_token=generate_csrf())
 
 @main_bp.route("/upload", methods=['POST'])
 @login_required

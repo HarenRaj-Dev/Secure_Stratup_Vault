@@ -9,14 +9,20 @@
     <div class="company-navbar">
         <a href="{{ url_for('companies.company_files', company_id=company.id) }}">Files</a>
         <a href="{{ url_for('companies.company_users', company_id=company.id) }}" class="active">Users</a>
+        {% if can_manage_roles %}
         <a href="{{ url_for('companies.company_roles', company_id=company.id) }}">Roles</a>
+        {% endif %}
+        {% if can_view_logs %}
         <a href="{{ url_for('companies.company_logs', company_id=company.id) }}">Activity Logs</a>
+        {% endif %}
         <a href="{{ url_for('companies.company_settings', company_id=company.id) }}">Settings</a>
     </div>
 
     <div class="tab-content">
         <div class="content-actions">
+            {% if can_add_users %}
             <button class="btn-primary" data-company-id="{{ company.id }}" onclick="addNewUser(this)">Add New User</button>
+            {% endif %}
         </div>
 
         <table class="vault-table">
@@ -32,9 +38,19 @@
                 {% for member in members %}
                 <tr>
                     <td>{{ member.user.email }}</td>
-                    <td><span class="badge {% if member.is_owner %}admin{% else %}member{% endif %}">{{ 'Owner' if member.is_owner else member.role.name }}</span></td>
+                    <td><span class="badge {% if member.is_owner %}admin{% else %}member{% endif %}">{{ 'Owner' if member.is_owner else (member.role.name if member.role else 'No Role') }}</span></td>
                     <td>Active</td>
-                    <td><button class="btn-sm">Edit</button></td>
+                    <td>
+                        {% if can_manage_roles %}
+                        <a href="{{ url_for('companies.edit_user_role', company_id=company.id, user_id=member.user.id) }}" class="btn-sm">Edit Role</a>
+                        {% endif %}
+                        {% if can_remove_user and not member.is_owner %}
+                        <form action="{{ url_for('companies.remove_user', company_id=company.id, user_id=member.user.id) }}" method="POST" class="remove-user-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="btn-sm btn-danger" onclick="return confirm('Are you sure you want to remove this user?')">Remove</button>
+                        </form>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

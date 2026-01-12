@@ -4,7 +4,7 @@
 <div class="company-container">
     <div class="company-header">
         <h1>Role Configuration</h1>
-        <p>Define permissions for users within {{ company.name }}</p>
+        <p>{% if role %}Edit{% else %}Define{% endif %} permissions for users within {{ company.name }}</p>
     </div>
 
     <div class="tab-content config-content">
@@ -84,11 +84,44 @@
                         <span class="slider round"></span>
                     </label>
                 </div>
+
+                <div class="perm-item">
+                    <div class="perm-info">
+                        <strong>Remove User Perm</strong>
+                        <span>Able to remove users from the company.</span>
+                    </div>
+                    <label class="switch">
+                        {{ form.perm_remove_user() }}
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="perm-item">
+                    <div class="perm-info">
+                        <strong>Manage Roles Perm</strong>
+                        <span>Able to create, edit, and manage company roles.</span>
+                    </div>
+                    <label class="switch">
+                        {{ form.perm_manage_roles() }}
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="perm-item">
+                    <div class="perm-info">
+                        <strong>Add Users Perm</strong>
+                        <span>Able to add new users to the company.</span>
+                    </div>
+                    <label class="switch">
+                        {{ form.perm_add_users() }}
+                        <span class="slider round"></span>
+                    </label>
+                </div>
             </div>
 
             <div class="config-actions">
                 <button type="button" class="btn-danger">Delete Role</button>
-                {{ form.submit(class="btn-primary") }}
+                {{ form.submit(class="btn-primary", value=submit_text) }}
             </div>
         </form>
     </div>

@@ -31,7 +31,7 @@
                     {% if role.perm_download %}Download{% endif %}
                 </p>
                 <div class="role-footer">
-                    <button class="btn-sm">Edit Role</button>
+                    <a href="{{ url_for('companies.edit_role_config', company_id=company.id, role_id=role.id) }}" class="btn-sm">Edit Role</a>
                 </div>
             </div>
             {% endfor %}

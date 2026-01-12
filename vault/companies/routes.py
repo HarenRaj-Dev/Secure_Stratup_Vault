@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, current_app, send_file
+from flask import render_template, redirect, url_for, flash, current_app, send_file, request
 from flask_login import login_required, current_user
 from vault import db
 from vault.models import Company, Role, ActivityLog, File, User, memberships
@@ -9,6 +9,7 @@ from vault.crypto_utils import encrypt_file_data, decrypt_file_data
 from vault.companies.services import log_activity, has_permission
 from werkzeug.utils import secure_filename
 from flask_wtf.csrf import generate_csrf
+from sqlalchemy import select, insert, update, delete
 import os
 import uuid
 import io
@@ -37,7 +38,19 @@ def create_company():
         db.session.commit()
         
         # Create a default Admin role for the company
-        admin_role = Role(name="Administrator", company_id=new_company.id, perm_admin=True)
+        admin_role = Role(
+            name="Administrator", 
+            company_id=new_company.id, 
+            perm_admin=True,
+            perm_view=True,
+            perm_modify=True,
+            perm_upload=True,
+            perm_download=True,
+            perm_logs=True,
+            perm_remove_user=True,
+            perm_manage_roles=True,
+            perm_add_users=True
+        )
         db.session.add(admin_role)
         db.session.commit()
         
@@ -64,7 +77,9 @@ def company_settings(company_id):
         if form.logo.data:
             logo_file = form.logo.data
             logo_filename = secure_filename(logo_file.filename)
-            logo_path = os.path.join(current_app.root_path, 'static', 'img', logo_filename)
+            # Use absolute path based on this file's location
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            logo_path = os.path.join(current_dir, 'static', 'img', logo_filename)
             logo_file.save(logo_path)
             company.logo = logo_filename
         db.session.commit()
@@ -81,6 +96,10 @@ def delete_company(company_id):
         flash("Only the owner can delete the company.", "danger")
         return redirect(url_for('companies.company_settings', company_id=company_id))
     
+    # Delete associated memberships first
+    from sqlalchemy import delete
+    db.session.execute(delete(memberships).where(memberships.c.company_id == company_id))
+    
     # Delete associated files, roles, logs, etc.
     File.query.filter_by(company_id=company_id).delete()
     Role.query.filter_by(company_id=company_id).delete()
@@ -89,6 +108,43 @@ def delete_company(company_id):
     db.session.commit()
     flash("Company deleted successfully.", "success")
     return redirect(url_for('main.dashboard'))
+
+@companies_bp.route('/<int:company_id>/remove_logo', methods=['POST'])
+@login_required
+def remove_logo(company_id):
+    company = Company.query.get_or_404(company_id)
+    if company.owner_id != current_user.id:
+        flash("Only the owner can remove the logo.", "danger")
+        return redirect(url_for('companies.company_settings', company_id=company_id))
+    
+    # Validate CSRF token
+    from flask_wtf.csrf import validate_csrf
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except Exception as e:
+        flash("CSRF validation failed.", "danger")
+        return redirect(url_for('companies.company_settings', company_id=company_id))
+    
+    if company.logo and company.logo != 'logo.svg':
+        # Delete the file from disk
+        import os
+        # Use absolute path based on this file's location
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        logo_path = os.path.join(current_dir, 'static', 'img', company.logo)
+        if os.path.exists(logo_path):
+            try:
+                os.remove(logo_path)
+            except Exception as e:
+                flash(f"Error deleting logo file: {e}", "danger")
+                return redirect(url_for('companies.company_settings', company_id=company_id))
+        company.logo = 'logo.svg'
+        db.session.commit()
+        log_activity(company_id, current_user.email, "Removed company logo")
+        flash("Logo removed successfully.", "success")
+    else:
+        flash("No logo to remove.", "info")
+    
+    return redirect(url_for('companies.company_settings', company_id=company_id))
 
 @companies_bp.route('/<int:company_id>/files')
 @login_required
@@ -108,9 +164,10 @@ def company_files(company_id):
         else:
             file.size = 0
     
-    log_activity(company_id, current_user.email, "Viewed company files")
-    form = UploadFileForm()
-    return render_template('companies/company_files.html', company=company, files=files, form=form, companies=get_user_companies())
+    form = UploadFileForm()  # ← Added missing form initialization
+    can_manage_roles = has_permission(current_user, company_id, 'perm_manage_roles')
+    can_view_logs = has_permission(current_user, company_id, 'perm_logs')
+    return render_template('companies/company_files.html', company=company, files=files, form=form, can_manage_roles=can_manage_roles, can_view_logs=can_view_logs, csrf_token=generate_csrf(), companies=get_user_companies())
 
 @companies_bp.route('/<int:company_id>/upload', methods=['POST'])
 @login_required
@@ -208,6 +265,9 @@ def delete_company_file(company_id, file_id):
 @login_required
 def company_roles(company_id):
     company = Company.query.get_or_404(company_id)
+    if not has_permission(current_user, company_id, 'perm_manage_roles'):
+        flash("You don't have permission to manage roles.", "danger")
+        return redirect(url_for('companies.company_files', company_id=company_id))
     roles = Role.query.filter_by(company_id=company_id).all()
     return render_template('companies/company_roles.html', company=company, roles=roles, companies=get_user_companies())
 
@@ -215,6 +275,9 @@ def company_roles(company_id):
 @login_required
 def role_config(company_id):
     company = Company.query.get_or_404(company_id)
+    if not has_permission(current_user, company_id, 'perm_manage_roles'):
+        flash("You don't have permission to manage roles.", "danger")
+        return redirect(url_for('companies.company_files', company_id=company_id))
     form = RoleForm()
     if form.validate_on_submit():
         new_role = Role(
@@ -225,18 +288,66 @@ def role_config(company_id):
             perm_modify=form.perm_modify.data,
             perm_upload=form.perm_upload.data,
             perm_download=form.perm_download.data,
-            perm_logs=form.perm_logs.data
+            perm_logs=form.perm_logs.data,
+            perm_remove_user=form.perm_remove_user.data,
+            perm_manage_roles=form.perm_manage_roles.data,
+            perm_add_users=form.perm_add_users.data
         )
         db.session.add(new_role)
         db.session.commit()
+        flash("Role created!", "success")
+        return redirect(url_for('companies.company_roles', company_id=company_id))
+    return render_template('companies/role_config.html', company=company, form=form, submit_text="Create Role", companies=get_user_companies())
+
+@companies_bp.route('/<int:company_id>/roles/config/<int:role_id>', methods=['GET', 'POST'])
+@login_required
+def edit_role_config(company_id, role_id):
+    company = Company.query.get_or_404(company_id)
+    if not has_permission(current_user, company_id, 'perm_manage_roles'):
+        flash("You don't have permission to manage roles.", "danger")
+        return redirect(url_for('companies.company_files', company_id=company_id))
+    role = Role.query.get_or_404(role_id)
+    if role.company_id != company_id:
+        flash("Role not found.", "danger")
+        return redirect(url_for('companies.company_roles', company_id=company_id))
+    
+    form = RoleForm()
+    if form.validate_on_submit():
+        role.name = form.name.data
+        role.perm_admin = form.perm_admin.data
+        role.perm_view = form.perm_view.data
+        role.perm_modify = form.perm_modify.data
+        role.perm_upload = form.perm_upload.data
+        role.perm_download = form.perm_download.data
+        role.perm_logs = form.perm_logs.data
+        role.perm_remove_user = form.perm_remove_user.data
+        role.perm_manage_roles = form.perm_manage_roles.data
+        role.perm_add_users = form.perm_add_users.data
+        db.session.commit()
         flash("Role updated!", "success")
         return redirect(url_for('companies.company_roles', company_id=company_id))
-    return render_template('companies/role_config.html', company=company, form=form, companies=get_user_companies())
+    
+    # Pre-fill form
+    form.name.data = role.name
+    form.perm_admin.data = role.perm_admin
+    form.perm_view.data = role.perm_view
+    form.perm_modify.data = role.perm_modify
+    form.perm_upload.data = role.perm_upload
+    form.perm_download.data = role.perm_download
+    form.perm_logs.data = role.perm_logs
+    form.perm_remove_user.data = role.perm_remove_user
+    form.perm_manage_roles.data = role.perm_manage_roles
+    form.perm_add_users.data = role.perm_add_users
+    
+    return render_template('companies/role_config.html', company=company, form=form, role=role, submit_text="Update Role", companies=get_user_companies())
 
 @companies_bp.route('/<int:company_id>/logs')
 @login_required
 def company_logs(company_id):
     company = Company.query.get_or_404(company_id)
+    if not has_permission(current_user, company_id, 'perm_logs'):
+        flash("You don't have permission to view activity logs.", "danger")
+        return redirect(url_for('companies.company_files', company_id=company_id))
     logs = ActivityLog.query.filter_by(company_id=company_id).order_by(ActivityLog.timestamp.desc()).all()
     return render_template('companies/company_logs.html', company=company, logs=logs, companies=get_user_companies())
 
@@ -249,30 +360,30 @@ def company_users(company_id):
         return redirect(url_for('main.dashboard'))
     
     # Fetch members
-    from sqlalchemy import select
-    members_query = db.session.execute(
-        select(User, Role)
-        .join(memberships, User.id == memberships.c.user_id)
-        .join(Role, memberships.c.role_id == Role.id)
-        .where(memberships.c.company_id == company_id)
-    ).all()
-    
     members = []
-    for user, role in members_query:
+    memberships_query = db.session.execute(select(memberships).where(memberships.c.company_id == company_id)).all()
+    for membership in memberships_query:
+        user = User.query.get(membership.user_id)
+        role = Role.query.get(membership.role_id) if membership.role_id else None
         members.append({
             'user': user,
             'role': role,
             'is_owner': user.id == company.owner_id
         })
     
-    return render_template('companies/company_users.html', company=company, members=members, companies=get_user_companies())
+    can_remove_user = has_permission(current_user, company_id, 'perm_remove_user')
+    can_add_users = has_permission(current_user, company_id, 'perm_add_users')
+    can_manage_roles = has_permission(current_user, company_id, 'perm_manage_roles')
+    can_view_logs = has_permission(current_user, company_id, 'perm_logs')
+    
+    return render_template('companies/company_users.html', company=company, members=members, can_remove_user=can_remove_user, can_add_users=can_add_users, can_manage_roles=can_manage_roles, can_view_logs=can_view_logs, companies=get_user_companies())
 
 @companies_bp.route('/<int:company_id>/add_user', methods=['GET', 'POST'])
 @login_required
 def add_company_user(company_id):
     company = Company.query.get_or_404(company_id)
-    if company.owner_id != current_user.id:
-        flash("Only the owner can add users.", "danger")
+    if not has_permission(current_user, company_id, 'perm_add_users'):
+        flash("You don't have permission to add users.", "danger")
         return redirect(url_for('companies.company_users', company_id=company_id))
     
     form = AddUserForm()
@@ -290,15 +401,9 @@ def add_company_user(company_id):
             flash("User already in company.", "danger")
             return redirect(url_for('companies.company_users', company_id=company_id))
         
-        # Get default role
-        default_role = Role.query.filter_by(company_id=company_id).first()
-        if not default_role:
-            flash("No roles available. Create a role first.", "danger")
-            return redirect(url_for('companies.company_roles', company_id=company_id))
-        
-        # Add to memberships
+        # Add to memberships with no role
         from sqlalchemy import insert
-        db.session.execute(insert(memberships).values(user_id=user.id, company_id=company_id, role_id=default_role.id))
+        db.session.execute(insert(memberships).values(user_id=user.id, company_id=company_id, role_id=None))
         db.session.commit()
         
         log_activity(company_id, current_user.email, f"Added user: {email}")
@@ -306,3 +411,72 @@ def add_company_user(company_id):
         return redirect(url_for('companies.company_users', company_id=company_id))
     
     return render_template('companies/add_user.html', company=company, form=form, companies=get_user_companies())
+
+@companies_bp.route('/<int:company_id>/edit_user_role/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+def edit_user_role(company_id, user_id):
+    company = Company.query.get_or_404(company_id)
+    if not has_permission(current_user, company_id, 'perm_manage_roles'):
+        flash("You don't have permission to manage roles.", "danger")
+        return redirect(url_for('companies.company_users', company_id=company_id))
+    
+    user = User.query.get_or_404(user_id)
+    
+    # Check if user is in company
+    from sqlalchemy import select
+    membership = db.session.execute(select(memberships).where(memberships.c.user_id == user_id, memberships.c.company_id == company_id)).first()
+    if not membership:
+        flash("User not in company.", "danger")
+        return redirect(url_for('companies.company_users', company_id=company_id))
+    
+    roles = Role.query.filter_by(company_id=company_id).all()
+    
+    if request.method == 'POST':
+        role_id = request.form.get('role_id')
+        if role_id == 'none':
+            new_role_id = None
+        else:
+            new_role_id = int(role_id)
+        
+        # Update membership
+        from sqlalchemy import update
+        db.session.execute(update(memberships).where(memberships.c.user_id == user_id, memberships.c.company_id == company_id).values(role_id=new_role_id))
+        db.session.commit()
+        
+        log_activity(company_id, current_user.email, f"Changed role for user: {user.email}")
+        flash("User role updated.", "success")
+        return redirect(url_for('companies.company_users', company_id=company_id))
+    
+    # Get current role
+    current_role_id = membership[2]  # role_id is the third column
+    current_role = Role.query.get(current_role_id) if current_role_id else None
+    
+    return render_template('companies/edit_user_role.html', company=company, user=user, roles=roles, current_role=current_role, companies=get_user_companies())
+
+@companies_bp.route('/<int:company_id>/remove_user/<int:user_id>', methods=['POST'])
+@login_required
+def remove_user(company_id, user_id):
+    company = Company.query.get_or_404(company_id)
+    if not has_permission(current_user, company_id, 'perm_remove_user'):
+        flash("You don't have permission to remove users.", "danger")
+        return redirect(url_for('companies.company_users', company_id=company_id))
+    
+    user = User.query.get_or_404(user_id)
+    if user.id == company.owner_id:
+        flash("Cannot remove the company owner.", "danger")
+        return redirect(url_for('companies.company_users', company_id=company_id))
+    
+    # Check if user is in company
+    from sqlalchemy import select
+    membership = db.session.execute(select(memberships).where(memberships.c.user_id == user_id, memberships.c.company_id == company_id)).first()
+    if not membership:
+        flash("User not in company.", "danger")
+        return redirect(url_for('companies.company_users', company_id=company_id))
+    
+    # Remove from memberships
+    db.session.execute(memberships.delete().where(memberships.c.user_id == user_id, memberships.c.company_id == company_id))
+    db.session.commit()
+    
+    log_activity(company_id, current_user.email, f"Removed user: {user.email}")
+    flash("User removed from company.", "success")
+    return redirect(url_for('companies.company_users', company_id=company_id))
