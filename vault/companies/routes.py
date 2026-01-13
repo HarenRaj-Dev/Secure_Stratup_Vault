@@ -77,9 +77,7 @@ def company_settings(company_id):
         if form.logo.data:
             logo_file = form.logo.data
             logo_filename = secure_filename(logo_file.filename)
-            # Use absolute path based on this file's location
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            logo_path = os.path.join(current_dir, 'static', 'img', logo_filename)
+            logo_path = os.path.join(current_app.root_path, 'static', 'img', logo_filename)
             logo_file.save(logo_path)
             company.logo = logo_filename
         db.session.commit()
@@ -128,9 +126,7 @@ def remove_logo(company_id):
     if company.logo and company.logo != 'logo.svg':
         # Delete the file from disk
         import os
-        # Use absolute path based on this file's location
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        logo_path = os.path.join(current_dir, 'static', 'img', company.logo)
+        logo_path = os.path.join(current_app.root_path, 'static', 'img', company.logo)
         if os.path.exists(logo_path):
             try:
                 os.remove(logo_path)

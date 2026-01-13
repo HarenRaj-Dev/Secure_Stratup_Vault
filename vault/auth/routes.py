@@ -31,7 +31,6 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
     
-    # We use request.form here to ensure we get data even if the WTForm is acting up
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')

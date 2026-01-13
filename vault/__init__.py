@@ -6,7 +6,7 @@ def create_app():
     app = Flask(__name__, instance_relative_config=True)
 
     # Load configuration from instance/config.py
-    app.config.from_pyfile('config.py', silent=True)
+    app.config.from_pyfile('../instance/config.py', silent=True)
     
     # Initialize Extensions
     db.init_app(app)

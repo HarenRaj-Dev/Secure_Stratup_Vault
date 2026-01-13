@@ -42,7 +42,7 @@
                     <td>Active</td>
                     <td>
                         {% if can_manage_roles %}
-                        <a href="{{ url_for('companies.edit_user_role', company_id=company.id, user_id=member.user.id) }}" class="btn-sm">Edit Role</a>
+                        <a href="{{ url_for('companies.edit_user_role', company_id=company.id, user_id=member.user.id) }}" class="btn-sm btn-secondary">Edit Role</a>
                         {% endif %}
                         {% if can_remove_user and not member.is_owner %}
                         <form action="{{ url_for('companies.remove_user', company_id=company.id, user_id=member.user.id) }}" method="POST" class="remove-user-form">

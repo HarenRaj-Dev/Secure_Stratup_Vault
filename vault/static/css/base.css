@@ -55,11 +55,29 @@ button, .btn-primary {
     z-index: 1000;
 }
 
+.sidebar-header{
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #374151;
+}
+
 /* Section Dividers */
 .sidebar-section {
     padding-bottom: 20px;
     margin-bottom: 20px;
     border-bottom: 1px solid #374151; /* The line between sections */
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+
+.sidebar-section::-webkit-scrollbar{
+    width: 5px;
+}
+
+.sidebar-section::-webkit-scrollbar-thumb{
+    background: #3f3f46;
+    border-radius: 5px;
 }
 
 /* Logout at the bottom */
@@ -254,6 +272,7 @@ button, .btn-primary {
     padding-top: 20px;
     border-top: 1px solid #374151; /* Line above logout */
     background: #0f172a;
+    margin-bottom: 30px;
 }
 
 .dashboard-container {
