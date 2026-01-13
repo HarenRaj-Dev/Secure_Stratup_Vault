@@ -9,7 +9,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/switches.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/companies.css') }}">
 </head>
-<body > {% if current_user.is_authenticated %}
+<body oncontextmenu="return false;">
+    {% if current_user.is_authenticated %}
         {% include 'partials/_vault_sidebar.html' %}
     {% endif %}
 
